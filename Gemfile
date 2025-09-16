@@ -15,6 +15,8 @@ group :development, :test do
   gem 'rspec-rails'
 end
 #for documentation with Swagger
+gem 'active_model_serializers', '~>0.10.0'
+#for serilizers
 gem "pg", "~> 1.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
