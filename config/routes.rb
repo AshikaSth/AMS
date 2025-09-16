@@ -1,7 +1,8 @@
 Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
-      get "/test", to: "test#index"
+      post "/login", to: "auth#login"
+      delete "/logout", to: "auth#logout"
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
