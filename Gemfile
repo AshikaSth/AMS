@@ -7,6 +7,14 @@ gem "jwt"
 #For encoding and decoding tokens
 gem "bcrypt", "~>3.1.7"
 #For password hashing
+gem 'rswag'
+gem 'rswag-api'
+gem 'rswag-ui'
+group :development, :test do
+  gem 'rswag-specs'
+  gem 'rspec-rails'
+end
+#for documentation with Swagger
 gem "pg", "~> 1.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
