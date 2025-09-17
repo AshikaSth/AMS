@@ -10,9 +10,52 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_17_075540) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_17_103607) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "albums", force: :cascade do |t|
+    t.string "name"
+    t.date "release_date"
+    t.string "cover_art_url"
+    t.string "genre"
+    t.bigint "artist_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artist_id"], name: "index_albums_on_artist_id"
+  end
+
+  create_table "artists", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.integer "first_release_year"
+    t.text "bio"
+    t.string "website"
+    t.string "photo_url"
+    t.string "genres"
+    t.jsonb "social_media_links"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_artists_on_user_id"
+  end
+
+  create_table "genres", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "musics", force: :cascade do |t|
+    t.string "title"
+    t.string "genre"
+    t.bigint "artist_id", null: false
+    t.bigint "album_id", null: false
+    t.string "audio_file_url"
+    t.string "cover_art_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["album_id"], name: "index_musics_on_album_id"
+    t.index ["artist_id"], name: "index_musics_on_artist_id"
+  end
 
   create_table "refresh_tokens", force: :cascade do |t|
     t.bigint "user_id", null: false
@@ -39,5 +82,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_075540) do
     t.date "dob"
   end
 
+  add_foreign_key "albums", "artists"
+  add_foreign_key "artists", "users"
+  add_foreign_key "musics", "albums"
+  add_foreign_key "musics", "artists"
   add_foreign_key "refresh_tokens", "users"
 end
