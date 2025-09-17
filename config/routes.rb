@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       get "/test", to: "test#index"
       post "/login", to: "auth#login"
       delete "/logout", to: "auth#logout"
+      get "profile", to: "auth#profile"
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
