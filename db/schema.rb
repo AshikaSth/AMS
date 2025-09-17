@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_17_065150) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_17_075540) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,9 +28,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_065150) do
   create_table "users", force: :cascade do |t|
     t.string "email"
     t.string "password_digest"
-    t.string "role"
+    t.integer "role", default: 2
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "phone_number"
+    t.integer "gender", default: 0
+    t.string "address"
+    t.date "dob"
   end
 
   add_foreign_key "refresh_tokens", "users"
