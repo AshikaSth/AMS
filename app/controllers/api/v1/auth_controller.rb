@@ -41,6 +41,21 @@ module Api
             def profile 
             render json: current_user, serializer: UserSerializer
             end
+
+            def register
+                user= User.new(user_params)
+                user.role = 'artist'
+                if user.save
+                    UserMailer.verify_email(user).deliver_later
+                    render json: user, serializer: UserSerializer, status: :created
+                else
+                    render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+                end
+            end
+
+            def user_params
+                params.require(:user).permit(:first_name, :last_name, :email, :password, :password_confirmation, :gender, :address, :phone_number, :dob)
+            end
         end
     end
 end

@@ -4,10 +4,13 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :users
+      resources :artists
       get "/test", to: "test#index"
       post "/login", to: "auth#login"
       delete "/logout", to: "auth#logout"
-      get "profile", to: "auth#profile"
+      get "/profile", to: "auth#profile"
+      post "register", to: "auth#register"
+
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

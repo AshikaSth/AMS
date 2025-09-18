@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_17_103607) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "album_genres", force: :cascade do |t|
+    t.bigint "album_id", null: false
+    t.bigint "genre_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["album_id"], name: "index_album_genres_on_album_id"
+    t.index ["genre_id"], name: "index_album_genres_on_genre_id"
+  end
 
   create_table "albums", force: :cascade do |t|
     t.string "name"
@@ -25,13 +34,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103607) do
     t.index ["artist_id"], name: "index_albums_on_artist_id"
   end
 
+  create_table "artist_genres", force: :cascade do |t|
+    t.bigint "artist_id", null: false
+    t.bigint "genre_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artist_id"], name: "index_artist_genres_on_artist_id"
+    t.index ["genre_id"], name: "index_artist_genres_on_genre_id"
+  end
+
   create_table "artists", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "first_release_year"
     t.text "bio"
     t.string "website"
     t.string "photo_url"
-    t.string "genres"
     t.jsonb "social_media_links"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -42,6 +59,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103607) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "music_genres", force: :cascade do |t|
+    t.bigint "music_id", null: false
+    t.bigint "genre_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["genre_id"], name: "index_music_genres_on_genre_id"
+    t.index ["music_id"], name: "index_music_genres_on_music_id"
   end
 
   create_table "musics", force: :cascade do |t|
@@ -82,8 +108,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103607) do
     t.date "dob"
   end
 
+  add_foreign_key "album_genres", "albums"
+  add_foreign_key "album_genres", "genres"
   add_foreign_key "albums", "artists"
+  add_foreign_key "artist_genres", "artists"
+  add_foreign_key "artist_genres", "genres"
   add_foreign_key "artists", "users"
+  add_foreign_key "music_genres", "genres"
+  add_foreign_key "music_genres", "musics"
   add_foreign_key "musics", "albums"
   add_foreign_key "musics", "artists"
   add_foreign_key "refresh_tokens", "users"

@@ -28,7 +28,7 @@ class Api::V1::UsersController < ApplicationController
 
   # PATCH api/v1/users/[:id]
   def update
-    @user = User.find(params[:id])
+      @user = User.find(params[:id])
 
     if @user.update(user_params)
       render json: @user, serializer: UserSerializer, status: :ok
