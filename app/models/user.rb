@@ -6,4 +6,5 @@ class User < ApplicationRecord
     enum :role, [:super_admin, :artist_manager, :artist]
     enum :gender, [:male, :female, :others]
     has_one :artist
+    has_many :managed_artists, class_name: 'Artist', foreign_key: 'manager_id'
 end

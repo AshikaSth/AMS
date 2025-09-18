@@ -29,5 +29,17 @@ class Api::V1::ArtistsController < ApplicationController
         Genre.find_or_create_by!(name: name)
         end
     end
+
+    before_action :authorize_request
+
+    def my_artists
+        # This will return a list of all artists managed by the current user
+        if current_user.role == 'artist_manager'
+        @artists = current_user.managed_artists
+        render json: @artists, status: :ok
+        else
+        render json: { error: 'You are not authorized to view this page' }, status: :unauthorized
+        end
+    end
     
 end
