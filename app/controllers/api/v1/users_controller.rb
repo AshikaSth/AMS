@@ -2,9 +2,8 @@ class Api::V1::UsersController < ApplicationController
 
   # GET api/v1/users
   def index
-    @users=policy_scope(User)
-    #  @users = User.all
-    render json: @users, each_serializer: UserSerializer, status: :ok
+      @users=policy_scope(User)
+      render json: @users, each_serializer: UserSerializer, status: :ok
   end
 
   # GET api/v1/users/[:id]
@@ -17,24 +16,32 @@ class Api::V1::UsersController < ApplicationController
 
   # POST api/v1/users
   def create
-    @user = User.new(user_params)
-    authorize @user
-    if @user.save
-      render json: @user, serializer: UserSerializer, status: :created
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+    begin
+      @user = User.new(user_params)
+      authorize @user
+      if @user.save
+        render json: @user, serializer: UserSerializer, status: :created
+      else
+        render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
     end
   end
 
   # PATCH api/v1/users/[:id]
   def update
-    @user = User.find(params[:id])
-    authorize @user
+    begin
+      @user = User.find(params[:id])
+      authorize @user
 
-    if @user.update(user_params)
-      render json: @user, serializer: UserSerializer, status: :ok
-    else
-      render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+      if @user.update(user_params)
+        render json: @user, serializer: UserSerializer, status: :ok
+      else
+        render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
     end
   end
 
@@ -48,6 +55,8 @@ class Api::V1::UsersController < ApplicationController
       render json: { message: "User deleted successfully" }, status: :ok
     rescue ActiveRecord::RecordNotFound
       render json: { error: "User not found" }, status: :not_found
+      rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
     end
   end
 

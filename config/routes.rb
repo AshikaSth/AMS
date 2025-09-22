@@ -12,6 +12,7 @@ Rails.application.routes.draw do
         end
         member do 
           patch :assign_manager
+          get :public_show
         end
       end
       resources :albums
@@ -22,7 +23,7 @@ Rails.application.routes.draw do
       post "/login", to: "auth#login"
       delete "/logout", to: "auth#logout"
       get "/profile", to: "auth#profile"
-      post "/update_profile", to: "auth#update_profile"
+      patch "/update_profile", to: "auth#update_profile"
 
       post "register", to: "auth#register"
       post "refresh", to: "auth#refresh"

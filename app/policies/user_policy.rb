@@ -16,7 +16,7 @@ class UserPolicy < ApplicationPolicy
   end
 
   def destroy?
-    user.super_admin?
+    user.super_admin? ||  user.id == record.id
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -26,7 +26,7 @@ class UserPolicy < ApplicationPolicy
       elsif user.artist_manager?
         scope.where(id: Artist.where(manager_id: user.id).pluck(:user_id))
       else
-        scope.where(user:user)
+        scope.where(id:user.id)
       end
     end
   end

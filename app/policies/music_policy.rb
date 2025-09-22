@@ -9,6 +9,7 @@ class MusicPolicy < ApplicationPolicy
 
   def update?
     return true if user.super_admin?
+    return false if user.artist_manager?
     return false unless record.creator 
     user.artist? && record.creator.user_id == user.id
   end

@@ -20,7 +20,7 @@ class Api::V1::MusicsController < ApplicationController
     unless current_artist
       return render json: {error: "Only artists can create music"}, status: :forbidden
     end
-    @music.artist_id = current_artist
+    @music.creator = current_artist
 
     requested_artist_ids = Array(music_params[:artist_ids]).map(&:to_i)
     requested_artist_ids << current_artist.id
@@ -53,28 +53,35 @@ class Api::V1::MusicsController < ApplicationController
   end
 
   def update
-    @music = Music.find(params[:id])
-    authorize @music
+    begin
+      @music = Music.find(params[:id])
+      authorize @music
 
-    if music_params.key?(:artist_ids)
-      collaborator_ids = Array(music_params[:artist_ids]).map(&:to_i)
-      collaborator_ids << @music.creator.id if @music.creator
-      collaborator_ids.uniq! 
-      @music.artist_ids = Artist.where(id: collaborator_ids).pluck(:id)
-    end
+      if music_params.key?(:artist_ids)
+        collaborator_ids = Array(music_params[:artist_ids]).map(&:to_i)
+        collaborator_ids << @music.creator.id 
+        collaborator_ids.uniq! 
+        @music.artist_ids = Artist.where(id: collaborator_ids).pluck(:id)
+      end
 
-    if music_params[:album_ids].present?
-      @music.album_ids = Album.where(id: Array(music_params[:album_ids]).map(&:to_i)).pluck(:id)
-    end
+      if music_params[:album_ids].present?
+        @music.album_ids = Album.where(id: Array(music_params[:album_ids]).map(&:to_i)).pluck(:id)
+      end
 
-    if music_params[:genres].present?
-      genres = find_or_create_genres(music_params[:genres])
-    end
+      if music_params[:genres].present?
+        genres = find_or_create_genres(music_params[:genres])
+         @music.genres = genres
+      end
 
-    if @music.update(music_params.except(:artist_ids, :album_ids, :genres))
-      render json: @music, serializer: MusicSerializer, status: :ok
-    else
-      render json: { errors: @music.errors.full_messages }, status: :unprocessable_entity
+      if @music.update(music_params.except(:artist_ids, :album_ids, :genres))
+        render json: @music, serializer: MusicSerializer, status: :ok
+      else
+        render json: { errors: @music.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: "Music not found" }, status: :not_found
     end
   end
 
@@ -86,6 +93,8 @@ class Api::V1::MusicsController < ApplicationController
 
       @music.destroy
       render json: { message: "Music deleted successfully" }, status: :ok
+    rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
     rescue ActiveRecord::RecordNotFound
       render json: { errors: "Music not found" }, status: :not_found
     rescue => e

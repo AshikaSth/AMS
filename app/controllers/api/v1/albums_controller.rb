@@ -52,28 +52,34 @@ class Api::V1::AlbumsController < ApplicationController
 
 
   def update
-    @album = Album.find(params[:id])
-    authorize @album
+    begin
+      @album = Album.find(params[:id])
+      authorize @album
 
-    if album_params.key?(:artist_ids)
-      collaborator_ids = Array(album_params[:artist_ids]).map(&:to_i)
-      collaborator_ids << @album_.creator.id if @album_.creator
-      collaborator_ids.uniq! 
-      @music.artist_ids = Artist.where(id: collaborator_ids).pluck(:id)
-    end
+      if album_params.key?(:artist_ids)
+        collaborator_ids = Array(album_params[:artist_ids]).map(&:to_i)
+        collaborator_ids << @album_.creator.id if @album_.creator
+        collaborator_ids.uniq! 
+        @album.artist_ids = Artist.where(id: collaborator_ids).pluck(:id)
+      end
 
-    if album_params[:music_ids].present?
-      @album.album_ids = Music.where(id: Array(album_params[:music_ids]).map(&:to_i)).pluck(:id)
-    end
+      if album_params[:music_ids].present?
+        @album.album_ids = Music.where(id: Array(album_params[:music_ids]).map(&:to_i)).pluck(:id)
+      end
 
-    if album_params[:genres].present?
-      genres = find_or_create_genres(album_params[:genres])
-    end
+      if album_params[:genres].present?
+        genres = find_or_create_genres(album_params[:genres])
+      end
 
-    if @album.update(album_params.except(:artist_ids, :music_ids, :genres))
-      render json: @album, serializer: AlbumSerializer, status: :ok
-    else
-      render json: { errors: @album.errors.full_messages }, status: :unprocessable_entity
+      if @album.update(album_params.except(:artist_ids, :music_ids, :genres))
+        render json: @album, serializer: AlbumSerializer, status: :ok
+      else
+        render json: { errors: @album.errors.full_messages }, status: :unprocessable_entity
+      end
+    rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+    rescue ActiveRecord::RecordNotFound
+      render json: { error: "Album not found" }, status: :not_found
     end
   end
 
@@ -84,6 +90,8 @@ class Api::V1::AlbumsController < ApplicationController
 
       @album.destroy
       render json: { message: "Album deleted successfully" }, status: :ok
+    rescue Pundit::NotAuthorizedError
+      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
     rescue ActiveRecord::RecordNotFound
       render json: { errors: "Album not found" }, status: :not_found
     end

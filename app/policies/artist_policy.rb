@@ -18,13 +18,9 @@ class ArtistPolicy < ApplicationPolicy
     end
     puts "Policy: Denying create"
     false
-  
-  
-    # return true if user.super_admin? || user.artist_manager?
-    # user.artist? && user.artist.nil?
   end
 
-  def updated?
+  def update?
     return true if user.super_admin?
     return true if user.artist_manager? && record.manager_id == user.id
     return true if user.artist? && record.user_id == user.id
