@@ -19,6 +19,8 @@ gem 'active_model_serializers', '~>0.10.0'
 #for serilizers
 gem 'rack-cors'
 #for CORS
+gem 'pundit'
+#pundit for RBAC
 gem "pg", "~> 1.1"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"

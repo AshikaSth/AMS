@@ -1,10 +1,10 @@
 require 'swagger_helper'
 
-RSpec.describe 'api/v1/artists', type: :request do
+RSpec.describe 'api/v1/musics', type: :request do
 
-  path '/api/v1/artists' do
+  path '/api/v1/musics' do
 
-    get('list artists') do
+    get('list musics') do
       response(200, 'successful') do
 
         after do |example|
@@ -18,7 +18,7 @@ RSpec.describe 'api/v1/artists', type: :request do
       end
     end
 
-    post('create artist') do
+    post('create music') do
       response(200, 'successful') do
 
         after do |example|
@@ -33,11 +33,11 @@ RSpec.describe 'api/v1/artists', type: :request do
     end
   end
 
-  path '/api/v1/artists/{id}' do
+  path '/api/v1/musics/{id}' do
     # You'll want to customize the parameter types...
     parameter name: 'id', in: :path, type: :string, description: 'id'
 
-    get('show artist') do
+    get('show music') do
       response(200, 'successful') do
         let(:id) { '123' }
 
@@ -52,7 +52,7 @@ RSpec.describe 'api/v1/artists', type: :request do
       end
     end
 
-    patch('update artist') do
+    patch('update music') do
       response(200, 'successful') do
         let(:id) { '123' }
 
@@ -67,7 +67,7 @@ RSpec.describe 'api/v1/artists', type: :request do
       end
     end
 
-    put('update artist') do
+    put('update music') do
       response(200, 'successful') do
         let(:id) { '123' }
 
@@ -82,7 +82,7 @@ RSpec.describe 'api/v1/artists', type: :request do
       end
     end
 
-    delete('delete artist') do
+    delete('delete music') do
       response(200, 'successful') do
         let(:id) { '123' }
 

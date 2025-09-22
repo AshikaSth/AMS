@@ -26,4 +26,5 @@ class TokensController < ApplicationController
         end
     else
         render json: {error: "Invalid token type"}, status: :unauthorized
+    end
 end

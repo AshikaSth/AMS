@@ -3,13 +3,29 @@ Rails.application.routes.draw do
   mount Rswag::Api::Engine => '/api-docs'
   namespace :api do
     namespace :v1 do
+      
       resources :users
-      resources :artists
+      resources :artists do
+        collection do
+          post :csv_import
+          get :csv_export
+        end
+        member do 
+          patch :assign_manager
+        end
+      end
+      resources :albums
+      resources :musics
+      resources  :genres
+
       get "/test", to: "test#index"
       post "/login", to: "auth#login"
       delete "/logout", to: "auth#logout"
       get "/profile", to: "auth#profile"
+      post "/update_profile", to: "auth#update_profile"
+
       post "register", to: "auth#register"
+      post "refresh", to: "auth#refresh"
 
     end
   end

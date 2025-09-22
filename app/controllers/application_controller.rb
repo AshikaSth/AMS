@@ -1,4 +1,6 @@
+
 class ApplicationController < ActionController::API
+  include Pundit::Authorization
   include ActionController::Cookies
 
   before_action :authorize_request, except: []

@@ -1,10 +1,9 @@
 class Api::V1::UsersController < ApplicationController
-  # before_action :authorize_request, only: [:index, :show ]  
-  skip_before_action :authorize_request, only: [:index, :show, :create, :update, :destroy]
 
   # GET api/v1/users
   def index
-    @users = User.all
+    @users=policy_scope(User)
+    #  @users = User.all
     render json: @users, each_serializer: UserSerializer, status: :ok
   end
 
@@ -19,6 +18,7 @@ class Api::V1::UsersController < ApplicationController
   # POST api/v1/users
   def create
     @user = User.new(user_params)
+    authorize @user
     if @user.save
       render json: @user, serializer: UserSerializer, status: :created
     else
@@ -28,7 +28,8 @@ class Api::V1::UsersController < ApplicationController
 
   # PATCH api/v1/users/[:id]
   def update
-      @user = User.find(params[:id])
+    @user = User.find(params[:id])
+    authorize @user
 
     if @user.update(user_params)
       render json: @user, serializer: UserSerializer, status: :ok
@@ -41,6 +42,8 @@ class Api::V1::UsersController < ApplicationController
   def destroy
     begin
       @user = User.find(params[:id])
+      authorize @user
+
       @user.destroy
       render json: { message: "User deleted successfully" }, status: :ok
     rescue ActiveRecord::RecordNotFound

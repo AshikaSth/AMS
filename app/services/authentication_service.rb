@@ -1,5 +1,5 @@
 class AuthenticationService
-    ACCESS_TOKEN_EXPIRY=15.minutes
+    ACCESS_TOKEN_EXPIRY=7.days
     REFRESH_TOKEN_EXPIRY=7.days
 
     def initialize(user)

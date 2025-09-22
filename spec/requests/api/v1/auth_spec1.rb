@@ -16,7 +16,6 @@ RSpec.describe 'api/v1/auth', type: :request do
         },
         required: ['email', 'password']
       }
-
       response(200, 'successful') do
 
         after do |example|
@@ -34,40 +33,6 @@ RSpec.describe 'api/v1/auth', type: :request do
   path '/api/v1/logout' do
 
     delete('logout auth') do
-      response(200, 'successful') do
-
-        after do |example|
-          example.metadata[:response][:content] = {
-            'application/json' => {
-              example: JSON.parse(response.body, symbolize_names: true)
-            }
-          }
-        end
-        run_test!
-      end
-    end
-  end
-
-  path '/api/v1/profile' do
-
-    get('profile auth') do
-      response(200, 'successful') do
-
-        after do |example|
-          example.metadata[:response][:content] = {
-            'application/json' => {
-              example: JSON.parse(response.body, symbolize_names: true)
-            }
-          }
-        end
-        run_test!
-      end
-    end
-  end
-
-  path '/api/v1/register' do
-
-    post('register auth') do
       response(200, 'successful') do
 
         after do |example|

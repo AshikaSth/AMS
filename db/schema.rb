@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_22_042036) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "album_artists", force: :cascade do |t|
+    t.bigint "album_id", null: false
+    t.bigint "artist_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["album_id"], name: "index_album_artists_on_album_id"
+    t.index ["artist_id"], name: "index_album_artists_on_artist_id"
+  end
 
   create_table "album_genres", force: :cascade do |t|
     t.bigint "album_id", null: false
@@ -23,15 +32,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
     t.index ["genre_id"], name: "index_album_genres_on_genre_id"
   end
 
+  create_table "album_musics", force: :cascade do |t|
+    t.bigint "album_id", null: false
+    t.bigint "music_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["album_id"], name: "index_album_musics_on_album_id"
+    t.index ["music_id"], name: "index_album_musics_on_music_id"
+  end
+
   create_table "albums", force: :cascade do |t|
     t.string "name"
     t.date "release_date"
     t.string "cover_art_url"
-    t.string "genre"
-    t.bigint "artist_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["artist_id"], name: "index_albums_on_artist_id"
   end
 
   create_table "artist_genres", force: :cascade do |t|
@@ -43,6 +58,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
     t.index ["genre_id"], name: "index_artist_genres_on_genre_id"
   end
 
+  create_table "artist_musics", force: :cascade do |t|
+    t.bigint "artist_id", null: false
+    t.bigint "music_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["artist_id"], name: "index_artist_musics_on_artist_id"
+    t.index ["music_id"], name: "index_artist_musics_on_music_id"
+  end
+
   create_table "artists", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "first_release_year"
@@ -52,6 +76,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
     t.jsonb "social_media_links"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "manager_id"
+    t.index ["manager_id"], name: "index_artists_on_manager_id"
     t.index ["user_id"], name: "index_artists_on_user_id"
   end
 
@@ -72,15 +98,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
 
   create_table "musics", force: :cascade do |t|
     t.string "title"
-    t.string "genre"
-    t.bigint "artist_id", null: false
-    t.bigint "album_id", null: false
     t.string "audio_file_url"
     t.string "cover_art_url"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["album_id"], name: "index_musics_on_album_id"
-    t.index ["artist_id"], name: "index_musics_on_artist_id"
+    t.bigint "artist_id"
   end
 
   create_table "refresh_tokens", force: :cascade do |t|
@@ -108,15 +130,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_103728) do
     t.date "dob"
   end
 
+  add_foreign_key "album_artists", "albums"
+  add_foreign_key "album_artists", "artists"
   add_foreign_key "album_genres", "albums"
   add_foreign_key "album_genres", "genres"
-  add_foreign_key "albums", "artists"
+  add_foreign_key "album_musics", "albums"
+  add_foreign_key "album_musics", "musics"
   add_foreign_key "artist_genres", "artists"
   add_foreign_key "artist_genres", "genres"
+  add_foreign_key "artist_musics", "artists"
+  add_foreign_key "artist_musics", "musics"
   add_foreign_key "artists", "users"
+  add_foreign_key "artists", "users", column: "manager_id"
   add_foreign_key "music_genres", "genres"
   add_foreign_key "music_genres", "musics"
-  add_foreign_key "musics", "albums"
-  add_foreign_key "musics", "artists"
   add_foreign_key "refresh_tokens", "users"
 end
