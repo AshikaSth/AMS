@@ -1,4 +1,5 @@
 class Album < ApplicationRecord
+  belongs_to :creator, class_name: "Artist", foreign_key: "artist_id", optional: true
 
   has_many :album_musics, dependent: :destroy
   has_many :musics, through: :album_musics

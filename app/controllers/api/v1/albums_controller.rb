@@ -1,11 +1,10 @@
 class Api::V1::AlbumsController < ApplicationController
 
-    def index
-        @albums=policy_scope(Album)
-        render json: @albums, each_serializer: AlbumSerializer, status: :ok
-    end
+  def index
+      @albums=policy_scope(Album)
+      render json: @albums, each_serializer: AlbumSerializer, status: :ok
+  end
 
-    # GET api/v1/users/[:id]
   def show
     @album = Album.find(params[:id])
     render json: @album, serializer: AlbumSerializer, status: :ok
@@ -14,41 +13,70 @@ class Api::V1::AlbumsController < ApplicationController
   end
     
     
-    def create 
-        artist=current_user.artist
-        @album = artist.albums.build(album_params.except(:genres))
-        authorize @album
-        if album_params[:genres].present?
-            genres = find_or_create_genres(album_params[:genres])
-            @album.genres << genres
-        end
+  def create 
+    @album = Album.new(album_params.except(:artist_ids, :music_ids, :genres))
+    current_artist = current_user.artist
+    unless current_artist
+      return render json: {error: "Only artists can create album"}, status: :forbidden
+    end
+    @album.creator = current_artist
 
-        if @album.save 
-            render json: @album, status: :created
-        else 
-            render json: {errors: @album.errors.full_messages}, status: :unprocessable_entity
-        end
+    requested_artist_ids = Array(album_params[:artist_ids]).map(&:to_i)
+    requested_artist_ids << current_artist.id
+    requested_artist_ids.uniq!
+
+    valid_artist_ids = Artist.where(id: requested_artist_ids).pluck(:id)
+    if valid_artist_ids.empty?
+      return render json: {error: "No valid artist ids provided"}, status: :unprocessable_entity
+    end
+    @album.artist_ids = valid_artist_ids
+
+    if album_params[:music_ids].present?
+      requested_music_ids = Array(album_params[:music_ids]).map(&:to_i)
+      valid_music_ids = Music.where(id: requested_music_ids).pluck(:id)
+      @album.music_ids = valid_music_ids
     end
 
-
-    def update
-      @album = Album.find(params[:id])
-      authorize @album
-
-      if album_params[:genres].present?
+    if album_params[:genres].present?
         genres = find_or_create_genres(album_params[:genres])
-        @album.genres = genres # overwrite old associations
-      end
+        @album.genres = genres
+    end
+    authorize @album
 
-      if @album.update(album_params.except(:genres))
-        render json: @album, serializer: AlbumSerializer, status: :ok
-      else
-        render json: { errors: @album.errors.full_messages }, status: :unprocessable_entity
-      end
+    if @album.save 
+      render json: @album, serializer: AlbumSerializer, status: :created
+    else 
+      render json: {errors: @album.errors.full_messages}, status: :unprocessable_entity
+    end
+  end
+
+
+  def update
+    @album = Album.find(params[:id])
+    authorize @album
+
+    if album_params.key?(:artist_ids)
+      collaborator_ids = Array(album_params[:artist_ids]).map(&:to_i)
+      collaborator_ids << @album_.creator.id if @album_.creator
+      collaborator_ids.uniq! 
+      @music.artist_ids = Artist.where(id: collaborator_ids).pluck(:id)
     end
 
+    if album_params[:music_ids].present?
+      @album.album_ids = Music.where(id: Array(album_params[:music_ids]).map(&:to_i)).pluck(:id)
+    end
 
-  # DELETE api/v1/albums/[:id]
+    if album_params[:genres].present?
+      genres = find_or_create_genres(album_params[:genres])
+    end
+
+    if @album.update(album_params.except(:artist_ids, :music_ids, :genres))
+      render json: @album, serializer: AlbumSerializer, status: :ok
+    else
+      render json: { errors: @album.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   def destroy
     begin
       @album = Album.find(params[:id])
@@ -59,22 +87,22 @@ class Api::V1::AlbumsController < ApplicationController
     rescue ActiveRecord::RecordNotFound
       render json: { errors: "Album not found" }, status: :not_found
     end
+    rescue => e
+      render json: { error: e.message }, status: :internal_server_error
   end
 
-    private 
-    def album_params 
-        params.require(:album).permit(
-            :name, :release_date, :cover_art_url, :artist_ids;[], :created_at, :updated_at, genres:[], music_ids:[]
-        )
-    end
+  private 
+  def album_params 
+      params.require(:album).permit(
+          :name, :release_date, :cover_art_url, artist_ids:[], genres:[], music_ids:[]
+      )
+  end
 
-    def find_or_create_genres(genre_names)
-        genre_names.map do |name|
-        Genre.find_or_create_by!(name:name.strip.downcase)
-        end
+  def find_or_create_genres(genre_names)
+    genre_names.map do |name|
+      Genre.find_or_create_by!(name:name.strip.downcase)
     end
-
-    
+  end  
 end
 
 

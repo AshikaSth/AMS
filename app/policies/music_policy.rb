@@ -14,7 +14,7 @@ class MusicPolicy < ApplicationPolicy
   end
 
   def destroy?
-    user.artist? && record.creator.user_id == user.id
+    user.super_admin? || user.artist? && record.creator.user_id == user.id
   end
 
   class Scope < ApplicationPolicy::Scope

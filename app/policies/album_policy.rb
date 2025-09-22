@@ -12,11 +12,13 @@ class AlbumPolicy < ApplicationPolicy
   end
 
   def update?
-    user.super_admin? ||  user.artist? && record.artist.user == user
+    return true if user.super_admin?
+    return false unless record.creator 
+    user.artist? && record.creator.user_id == user.id
   end
 
   def destroy?
-    user.super_admin? ||  user.artist? && record.artist.user == user
+    user.super_admin? ||  user.artist? && record.creator.user_id == user.id
   end
   class Scope < ApplicationPolicy::Scope
     def resolve
