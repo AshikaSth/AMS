@@ -14,6 +14,12 @@ class Api::V1::UsersController < ApplicationController
     render json: { error: "User not found" }, status: :not_found
   end
 
+  def unassigned_artists
+    authorize User, :unassigned_artists?
+    @users = User.where(role: 'artist').left_outer_joins(:artist).where(artists: { id: nil })
+    render json: @users, each_serializer: UserSerializer, status: :ok
+  end
+
   # POST api/v1/users
   def create
     begin

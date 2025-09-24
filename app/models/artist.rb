@@ -1,4 +1,5 @@
 class Artist < ApplicationRecord
+  has_one_attached :photo
   belongs_to :user
   belongs_to :manager, class_name: 'User', foreign_key: 'manager_id', optional: true
 

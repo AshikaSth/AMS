@@ -1,4 +1,7 @@
 class Music < ApplicationRecord
+  has_one_attached :cover_art
+  has_one_attached :audio
+  
   has_many :artist_musics, dependent: :destroy
   has_many :artists, through: :artist_musics
 

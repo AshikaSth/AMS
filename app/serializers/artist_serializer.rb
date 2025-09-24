@@ -1,6 +1,11 @@
 class ArtistSerializer < ActiveModel::Serializer
-  attributes :id, :first_release_year, :bio, :website, :photo_url, :genres, :manager_id, :created_at, :updated_at, :no_of_albums_released
+  include Rails.application.routes.url_helpers
 
+  attributes :id, :first_release_year, :bio, :website, :genres, :created_at, :updated_at, :social_media_links, :no_of_albums_released, :photo_url
+
+  def photo_url
+    object.photo.attached? ? rails_blob_path(object.photo, only_path: true) : nil
+  end
   has_many :genres
   has_many :albums
   has_many :musics

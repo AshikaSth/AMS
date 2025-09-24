@@ -19,8 +19,8 @@ module Api
                         expires_at: 7.days.from_now
                     )
 
-                    cookies.signed[:access_token] = { value: access_token, httponly: true, secure: Rails.env.production?, expires: 15.minutes.from_now }
-                    cookies.signed[:refresh_token] = { value: refresh_token, httponly: true, secure: Rails.env.production?, expires: 7.days.from_now }
+                    cookies.signed[:access_token] = { value: access_token, httponly: true, secure: true, expires: 7.days.from_now, same_site: :none  }
+                    cookies.signed[:refresh_token] = { value: refresh_token, httponly: true, secure: true, expires: 7.days.from_now, same_site: :none }
                     render json: { message: "Logged in successfully!", user: user  }, status: :ok
                 else
                     render json: { message: "Invalid email or password" }, status: :unauthorized
@@ -123,7 +123,7 @@ module Api
         def profile_params
             allowed = [
                 :first_name, :last_name, :email, :gender, :address, :dob, :phone_number,
-                artist: [:first_release_year, :bio, :website, :photo_url, { social_media_links: {} }, { genres: [] }]
+                artist: [:first_release_year, :bio, :website, :photo, { social_media_links: {} }, { genres: [] }]
             ]
             params.require(:user).permit(allowed)
         end

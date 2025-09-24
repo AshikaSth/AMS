@@ -1,7 +1,8 @@
 class Api::V1::MusicsController < ApplicationController
-
+  before_action :authorize_request 
+  before_action :set_music, only: [:show, :update, :destroy]
   def index
-    @musics=policy_scope(Music)
+    @musics=policy_scope(Music).includes(:artists, :albums, :genres).with_attached_cover_art.with_attached_audio
     render json: @musics, each_serializer: MusicSerializer, status: :ok
   end
 
@@ -14,7 +15,7 @@ class Api::V1::MusicsController < ApplicationController
   end
       
   def create 
-    @music = Music.new(music_params.except(:artist_ids, :album_ids, :genres))
+    @music = Music.new(music_params.except(:artist_ids, :album_ids, :genres, :cover_art, :audio))
     current_artist = current_user.artist
 
     unless current_artist
@@ -41,6 +42,16 @@ class Api::V1::MusicsController < ApplicationController
     if music_params[:genres].present?
         genres = find_or_create_genres(music_params[:genres])
         @music.genres = genres
+    end
+
+    if music_params[:cover_art].present?
+      Rails.logger.info "Attaching cover_art: #{music_params[:cover_art].inspect}"
+      @music.cover_art.attach(music_params[:cover_art])
+    end
+
+    if music_params[:audio].present?
+      Rails.logger.info "Attaching audio: #{music_params[:audio].inspect}" 
+      @music.audio.attach(music_params[:audio])
     end
 
     authorize @music
@@ -73,7 +84,19 @@ class Api::V1::MusicsController < ApplicationController
          @music.genres = genres
       end
 
-      if @music.update(music_params.except(:artist_ids, :album_ids, :genres))
+     if music_params[:cover_art].present? 
+        Rails.logger.info "Purging existing cover_art" if @music.cover_art.attached? 
+        @music.cover_art.purge if @music.cover_art.attached?
+        @music.cover_art.attach(music_params[:cover_art])
+      end
+
+      if music_params[:audio].present? #
+        Rails.logger.info "Purging existing audio" if @music.audio.attached? #
+        @music.audio.purge_later if @music.audio.attached? 
+        @music.audio.attach(music_params[:audio])
+      end
+
+      if @music.update(music_params.except(:artist_ids, :album_ids, :genres, :cover_art, :audio))
         render json: @music, serializer: MusicSerializer, status: :ok
       else
         render json: { errors: @music.errors.full_messages }, status: :unprocessable_entity
@@ -106,7 +129,8 @@ class Api::V1::MusicsController < ApplicationController
   def music_params 
     params.require(:music).permit(
       :title,
-      :cover_art_url,
+      :cover_art,
+      :audio,
       album_ids:[], 
       artist_ids:[], 
       genres:[]

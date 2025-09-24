@@ -1,7 +1,8 @@
 class Api::V1::AlbumsController < ApplicationController
-
+  before_action :authorize_request
+  before_action :set_album, only: [:show, :update, :destroy] 
   def index
-      @albums=policy_scope(Album)
+      @albums=policy_scope(Album).includes(artists: :user, creator: :user, musics: [], genres: []).with_attached_cover_art
       render json: @albums, each_serializer: AlbumSerializer, status: :ok
   end
 
@@ -14,7 +15,9 @@ class Api::V1::AlbumsController < ApplicationController
     
     
   def create 
-    @album = Album.new(album_params.except(:artist_ids, :music_ids, :genres))
+
+    cover_art = album_params[:cover_art]
+    @album = Album.new(album_params.except(:artist_ids, :music_ids, :genres, :cover_art))
     current_artist = current_user.artist
     unless current_artist
       return render json: {error: "Only artists can create album"}, status: :forbidden
@@ -41,6 +44,13 @@ class Api::V1::AlbumsController < ApplicationController
         genres = find_or_create_genres(album_params[:genres])
         @album.genres = genres
     end
+
+    if cover_art.present?
+      Rails.logger.info "Attaching cover_art: #{cover_art.inspect}"
+      @album.cover_art.attach(cover_art)
+    end
+
+
     authorize @album
 
     if @album.save 
@@ -58,7 +68,7 @@ class Api::V1::AlbumsController < ApplicationController
 
       if album_params.key?(:artist_ids)
         collaborator_ids = Array(album_params[:artist_ids]).map(&:to_i)
-        collaborator_ids << @album_.creator.id if @album_.creator
+        collaborator_ids << @album.creator.id if @album.creator
         collaborator_ids.uniq! 
         @album.artist_ids = Artist.where(id: collaborator_ids).pluck(:id)
       end
@@ -69,6 +79,12 @@ class Api::V1::AlbumsController < ApplicationController
 
       if album_params[:genres].present?
         genres = find_or_create_genres(album_params[:genres])
+      end
+
+      if album_params[:cover_art].present?
+        Rails.logger.info "Purging existing cover_art" if @album.cover_art.attached?
+        @album.cover_art.purge if @album.cover_art.attached?
+        @album.cover_art.attach(album_params[:cover_art])
       end
 
       if @album.update(album_params.except(:artist_ids, :music_ids, :genres))
@@ -100,9 +116,12 @@ class Api::V1::AlbumsController < ApplicationController
   end
 
   private 
+  def set_album
+    @album = Album.find(params[:id]) 
+  end
   def album_params 
       params.require(:album).permit(
-          :name, :release_date, :cover_art_url, artist_ids:[], genres:[], music_ids:[]
+          :name, :release_date, :cover_art, artist_ids:[], genres:[], music_ids:[]
       )
   end
 

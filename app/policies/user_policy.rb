@@ -7,6 +7,10 @@ class UserPolicy < ApplicationPolicy
     user.super_admin?
   end
 
+  def unassigned_artists?
+    user.super_admin? || user.artist_manager?
+  end
+
   def create?
     user.super_admin?
   end
