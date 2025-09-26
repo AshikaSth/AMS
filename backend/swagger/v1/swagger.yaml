@@ -1,0 +1,210 @@
+---
+openapi: 3.0.1
+info:
+  title: API V1
+  version: v1
+paths:
+  "/api/v1/albums":
+    get:
+      summary: list albums
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: create album
+      responses:
+        '200':
+          description: successful
+  "/api/v1/albums/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: show album
+      responses:
+        '200':
+          description: successful
+    patch:
+      summary: update album
+      responses:
+        '200':
+          description: successful
+    put:
+      summary: update album
+      responses:
+        '200':
+          description: successful
+    delete:
+      summary: delete album
+      responses:
+        '200':
+          description: successful
+  "/api/v1/artists":
+    get:
+      summary: list artists
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: create artist
+      responses:
+        '200':
+          description: successful
+  "/api/v1/artists/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: show artist
+      responses:
+        '200':
+          description: successful
+    patch:
+      summary: update artist
+      responses:
+        '200':
+          description: successful
+    put:
+      summary: update artist
+      responses:
+        '200':
+          description: successful
+    delete:
+      summary: delete artist
+      responses:
+        '200':
+          description: successful
+  "/api/v1/login":
+    post:
+      summary: login auth
+      tags:
+      - Authentication
+      parameters: []
+      responses:
+        '200':
+          description: successful
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+              - email
+              - password
+  "/api/v1/logout":
+    delete:
+      summary: logout auth
+      responses:
+        '200':
+          description: successful
+  "/api/v1/profile":
+    get:
+      summary: profile auth
+      responses:
+        '200':
+          description: successful
+  "/api/v1/register":
+    post:
+      summary: register auth
+      responses:
+        '200':
+          description: successful
+  "/api/v1/musics":
+    get:
+      summary: list musics
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: create music
+      responses:
+        '200':
+          description: successful
+  "/api/v1/musics/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: show music
+      responses:
+        '200':
+          description: successful
+    patch:
+      summary: update music
+      responses:
+        '200':
+          description: successful
+    put:
+      summary: update music
+      responses:
+        '200':
+          description: successful
+    delete:
+      summary: delete music
+      responses:
+        '200':
+          description: successful
+  "/api/v1/test":
+    get:
+      summary: list tests
+      responses:
+        '200':
+          description: successful
+  "/api/v1/users":
+    get:
+      summary: list users
+      responses:
+        '200':
+          description: successful
+    post:
+      summary: create user
+      responses:
+        '200':
+          description: successful
+  "/api/v1/users/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: show user
+      responses:
+        '200':
+          description: successful
+    patch:
+      summary: update user
+      responses:
+        '200':
+          description: successful
+    put:
+      summary: update user
+      responses:
+        '200':
+          description: successful
+    delete:
+      summary: delete user
+      responses:
+        '200':
+          description: successful
+servers:
+- url: http://127.0.0.1:3000
