@@ -3,13 +3,7 @@ class AlbumSerializer < ActiveModel::Serializer
   attributes :id, :name, :release_date,  :created_at, :updated_at, :cover_art_url, :artist_names
 
     def cover_art_url
-    if object.cover_art.attached?
-      Rails.logger.info "Generating cover_art_url for Album #{object.id}" # Added logging
-      url_for(object.cover_art)
-    else
-      Rails.logger.info "No cover art attached for Album #{object.id}"
-      nil
-    end
+    object.cover_art.attached? ? rails_blob_path(object.cover_art, only_path: true) : nil
   end
 
   def artist_names

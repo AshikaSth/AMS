@@ -46,6 +46,17 @@ class ArtistPolicy < ApplicationPolicy
     user.super_admin?
   end
 
+  def all_artists?
+    user.artist? || user.artist_manager? || user.super_admin?
+  end
+
+  def my_artists?
+    return false unless user
+    user.artist_manager?
+  end
+
+
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       if user.super_admin?

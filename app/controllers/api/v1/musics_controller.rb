@@ -1,17 +1,35 @@
 class Api::V1::MusicsController < ApplicationController
+  include Paginatable
   before_action :authorize_request 
   before_action :set_music, only: [:show, :update, :destroy]
   def index
-    @musics=policy_scope(Music).includes(:artists, :albums, :genres).with_attached_cover_art.with_attached_audio
-    render json: @musics, each_serializer: MusicSerializer, status: :ok
+    musics = policy_scope(Music)
+               .includes(:artists, :albums, :genres)
+               .with_attached_cover_art
+               .with_attached_audio
+
+    @musics = paginate(musics)
+
+    render json: @musics,
+           each_serializer: MusicSerializer,
+           meta: paginate_meta(@musics),
+           adapter: :json,
+           status: :ok
   end
 
   def show
     @music = Music.find(params[:id])
     render json: @music, serializer: MusicSerializer, status: :ok
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Music not found" }, status: :not_found
-  
+    render json: { errors: [{ field: 'music', message: 'Music not found', type: 'not_found' }] }, status: :not_found
+  end
+
+  def all
+    authorize Music, :all_musics?
+    @musics = Music.includes(:artists, :albums, :genres)
+               .with_attached_cover_art
+               .with_attached_audio
+    render json: @musics, each_serializer: MusicSerializer, status: :ok
   end
       
   def create 
@@ -19,7 +37,7 @@ class Api::V1::MusicsController < ApplicationController
     current_artist = current_user.artist
 
     unless current_artist
-      return render json: {error: "Only artists can create music"}, status: :forbidden
+      return render json: { errors: [{ field: 'artist', message: 'Only artists can create music', type: 'authorization_error' }] }, status: :forbidden
     end
     @music.creator = current_artist
 
@@ -29,7 +47,7 @@ class Api::V1::MusicsController < ApplicationController
 
     valid_artist_ids = Artist.where(id: requested_artist_ids).pluck(:id)
     if valid_artist_ids.empty?
-      return render json: {error: "No valid artist ids provided"}, status: :unprocessable_entity
+      return render json: { errors: [{ field: 'artist_ids', message: 'No valid artist ids provided', type: 'validation_error' }] }, status: :unprocessable_entity
     end
     @music.artist_ids = valid_artist_ids
 
@@ -59,8 +77,11 @@ class Api::V1::MusicsController < ApplicationController
     if @music.save 
       render json: @music, serializer: MusicSerializer, status: :created
     else 
-      render json: {errors: @music.errors.full_messages}, status: :unprocessable_entity
+      render json: { errors: formatted_errors(@music) }, status: :unprocessable_entity
     end
+
+    rescue Pundit::NotAuthorizedError
+    render json: { errors: [{ field: 'authorization', message: 'You are not authorized to perform this action', type: 'authorization_error' }] }, status: :forbidden
   end
 
   def update
@@ -99,12 +120,12 @@ class Api::V1::MusicsController < ApplicationController
       if @music.update(music_params.except(:artist_ids, :album_ids, :genres, :cover_art, :audio))
         render json: @music, serializer: MusicSerializer, status: :ok
       else
-        render json: { errors: @music.errors.full_messages }, status: :unprocessable_entity
+        render json: { errors: formatted_errors(@music) }, status: :unprocessable_entity
       end
     rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+      render json: { errors: [{ field: 'authorization', message: 'You are not authorized to perform this action', type: 'authorization_error' }] }, status: :forbidden
     rescue ActiveRecord::RecordNotFound
-      render json: { error: "Music not found" }, status: :not_found
+      render json: { errors: [{ field: 'music', message: 'Music not found', type: 'not_found' }] }, status: :not_found
     end
   end
 
@@ -117,11 +138,11 @@ class Api::V1::MusicsController < ApplicationController
       @music.destroy
       render json: { message: "Music deleted successfully" }, status: :ok
     rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
-    rescue ActiveRecord::RecordNotFound
-      render json: { errors: "Music not found" }, status: :not_found
-    rescue => e
-      render json: { error: e.message }, status: :internal_server_error
+    render json: { errors: [{ field: 'authorization', message: 'You are not authorized to perform this action', type: 'authorization_error' }] }, status: :forbidden
+  rescue ActiveRecord::RecordNotFound
+    render json: { errors: [{ field: 'music', message: 'Music not found', type: 'not_found' }] }, status: :not_found
+  rescue => e
+    render json: { errors: [{ field: 'server', message: e.message, type: 'internal_error' }] }, status: :internal_server_error
     end
   end
 

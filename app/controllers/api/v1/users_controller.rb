@@ -1,17 +1,27 @@
 class Api::V1::UsersController < ApplicationController
+  include Paginatable
 
-  # GET api/v1/users
   def index
-      @users=policy_scope(User)
-      render json: @users, each_serializer: UserSerializer, status: :ok
+    users = policy_scope(User)
+    @users = paginate(users)
+
+    render json: @users,
+           each_serializer: UserSerializer,
+           meta: paginate_meta(@users),
+           adapter: :json,
+           status: :ok
   end
 
-  # GET api/v1/users/[:id]
+  def all
+    @artists = Artist.includes(:user, :genres, :albums, :musics).with_attached_photo
+    render json: @artists, each_serializer: ArtistSerializer, status: :ok
+  end
+
   def show
     @user = User.find(params[:id])
     render json: @user, serializer: UserSerializer, status: :ok
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "User not found" }, status: :not_found
+    render json: { errors: [{ field: 'user', message: 'User not found', type: 'not_found' }] }, status: :not_found
   end
 
   def unassigned_artists
@@ -20,50 +30,44 @@ class Api::V1::UsersController < ApplicationController
     render json: @users, each_serializer: UserSerializer, status: :ok
   end
 
-  # POST api/v1/users
   def create
-    begin
-      @user = User.new(user_params)
-      authorize @user
-      if @user.save
-        render json: @user, serializer: UserSerializer, status: :created
-      else
-        render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
-      end
-    rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+    @user = User.new(user_params)
+    authorize @user
+
+    if @user.save
+      render json: @user, serializer: UserSerializer, status: :created
+    else
+      render json: { errors: formatted_errors(@user) }, status: :unprocessable_entity
     end
+  rescue Pundit::NotAuthorizedError
+    render json: { error: "You are not authorized to perform this action." }, status: :forbidden
   end
 
-  # PATCH api/v1/users/[:id]
   def update
-    begin
-      @user = User.find(params[:id])
-      authorize @user
+    @user = User.find(params[:id])
+    authorize @user
 
-      if @user.update(user_params)
-        render json: @user, serializer: UserSerializer, status: :ok
-      else
-        render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
-      end
-    rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+    if @user.update(user_params)
+      render json: @user, serializer: UserSerializer, status: :ok
+    else
+      render json: { errors: formatted_errors(@user) }, status: :unprocessable_entity
     end
+  rescue Pundit::NotAuthorizedError
+    render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+  rescue ActiveRecord::RecordNotFound
+    render json: { errors: [{ field: 'user', message: 'User not found', type: 'not_found' }] }, status: :not_found
   end
 
-  # DELETE api/v1/users/[:id]
   def destroy
-    begin
-      @user = User.find(params[:id])
-      authorize @user
+    @user = User.find(params[:id])
+    authorize @user
 
-      @user.destroy
-      render json: { message: "User deleted successfully" }, status: :ok
-    rescue ActiveRecord::RecordNotFound
-      render json: { error: "User not found" }, status: :not_found
-      rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
-    end
+    @user.destroy
+    render json: { message: "User deleted successfully" }, status: :ok
+  rescue ActiveRecord::RecordNotFound
+    render json: { errors: [{ field: 'user', message: 'User not found', type: 'not_found' }] }, status: :not_found
+  rescue Pundit::NotAuthorizedError
+    render json: { error: "You are not authorized to perform this action." }, status: :forbidden
   end
 
   private

@@ -17,4 +17,22 @@ class Artist < ApplicationRecord
     albums.count
   end
 
+  validates :user_id, presence: true, uniqueness: true
+  validates :manager_id, numericality: { only_integer: true }, allow_nil: true
+  validates :bio, length: { maximum: 1000 }, allow_blank: true
+  validates :website, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), message: "must be a valid URL" }, allow_blank: true
+
+  validate :acceptable_photo
+
+  def acceptable_photo
+    return unless photo.attached?
+
+    unless photo.content_type.start_with?('image/')
+      errors.add(:photo, "must be an image")
+    end
+
+    if photo.byte_size > 10.megabytes
+      errors.add(:photo, "is too big. Max size is 10MB")
+    end
+  end
 end

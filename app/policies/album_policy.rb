@@ -7,6 +7,10 @@ class AlbumPolicy < ApplicationPolicy
       true
   end
 
+  def all_albums?
+    user.artist? || user.artist_manager? || user.super_admin?
+  end
+
   def create?
     user.artist?
   end

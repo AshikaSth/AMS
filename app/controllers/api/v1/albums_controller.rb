@@ -1,16 +1,32 @@
 class Api::V1::AlbumsController < ApplicationController
+  include Paginatable
   before_action :authorize_request
-  before_action :set_album, only: [:show, :update, :destroy] 
+  before_action :set_album, only: [:show,:update, :destroy] 
   def index
-      @albums=policy_scope(Album).includes(artists: :user, creator: :user, musics: [], genres: []).with_attached_cover_art
-      render json: @albums, each_serializer: AlbumSerializer, status: :ok
+    albums = policy_scope(Album)
+               .includes(artists: :user, creator: :user, musics: [], genres: [])
+               .with_attached_cover_art
+
+    @albums = paginate(albums)
+
+    render json: @albums,
+           each_serializer: AlbumSerializer,
+           meta: paginate_meta(@albums),
+           adapter: :json,
+           status: :ok
   end
 
   def show
     @album = Album.find(params[:id])
     render json: @album, serializer: AlbumSerializer, status: :ok
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Album not found" }, status: :not_found
+    render json: { errors: [{ field: 'album', message: 'Album not found', type: 'not_found' }] }, status: :not_found
+  end
+
+  def all
+    authorize Album, :all_albums?
+    @albums = Album.includes(artists: :user, creator: :user, musics: [], genres: []).with_attached_cover_art
+    render json: @albums, each_serializer: AlbumSerializer, status: :ok
   end
     
     
@@ -56,8 +72,10 @@ class Api::V1::AlbumsController < ApplicationController
     if @album.save 
       render json: @album, serializer: AlbumSerializer, status: :created
     else 
-      render json: {errors: @album.errors.full_messages}, status: :unprocessable_entity
+      render json: { errors: formatted_errors(@album) }, status: :unprocessable_entity
     end
+  rescue Pundit::NotAuthorizedError
+    render json: { errors: [{ field: 'authorization', message: 'You are not authorized to perform this action', type: 'authorization_error' }] }, status: :forbidden
   end
 
 
@@ -78,7 +96,7 @@ class Api::V1::AlbumsController < ApplicationController
       end
 
       if album_params[:genres].present?
-        genres = find_or_create_genres(album_params[:genres])
+        @album.genres = find_or_create_genres(album_params[:genres])
       end
 
       if album_params[:cover_art].present?
@@ -90,29 +108,27 @@ class Api::V1::AlbumsController < ApplicationController
       if @album.update(album_params.except(:artist_ids, :music_ids, :genres))
         render json: @album, serializer: AlbumSerializer, status: :ok
       else
-        render json: { errors: @album.errors.full_messages }, status: :unprocessable_entity
+        render json: { errors: formatted_errors(@album) }, status: :unprocessable_entity
       end
     rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+      render json: { errors: [{ field: 'authorization', message: 'You are not authorized to perform this action', type: 'authorization_error' }] }, status: :forbidden
     rescue ActiveRecord::RecordNotFound
-      render json: { error: "Album not found" }, status: :not_found
+      render json: { errors: [{ field: 'album', message: 'Album not found', type: 'not_found' }] }, status: :not_found
     end
   end
 
   def destroy
-    begin
       @album = Album.find(params[:id])
       authorize @album
 
       @album.destroy
       render json: { message: "Album deleted successfully" }, status: :ok
     rescue Pundit::NotAuthorizedError
-      render json: { error: "You are not authorized to perform this action." }, status: :forbidden
+      render json: { errors: [{ field: 'authorization', message: 'You are not authorized to perform this action', type: 'authorization_error' }] }, status: :forbidden
     rescue ActiveRecord::RecordNotFound
-      render json: { errors: "Album not found" }, status: :not_found
-    end
+      render json: { errors: [{ field: 'album', message: 'Album not found', type: 'not_found' }] }, status: :not_found
     rescue => e
-      render json: { error: e.message }, status: :internal_server_error
+      render json: { errors: [{ field: 'server', message: e.message, type: 'internal_error' }] }, status: :internal_server_error
   end
 
   private 

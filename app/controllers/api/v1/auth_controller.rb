@@ -21,9 +21,11 @@ module Api
 
                     cookies.signed[:access_token] = { value: access_token, httponly: true, secure: true, expires: 7.days.from_now, same_site: :none  }
                     cookies.signed[:refresh_token] = { value: refresh_token, httponly: true, secure: true, expires: 7.days.from_now, same_site: :none }
-                    render json: { message: "Logged in successfully!", user: user  }, status: :ok
+                    artist_data = user.artist ? ActiveModelSerializers::SerializableResource.new(user.artist, serializer: ArtistSerializer) : nil
+
+                    render json: { message: "Logged in successfully!", access_token: access_token, refresh_token: refresh_token,  user: user, artist: artist_data }, status: :ok
                 else
-                    render json: { message: "Invalid email or password" }, status: :unauthorized
+                    render json: { errors: [{ field: 'email_or_password', message: 'Invalid email or password', type: 'authentication_error' }] }, status: :unauthorized
                 end
             end
 
@@ -46,7 +48,17 @@ module Api
                     UserMailer.verify_email(user).deliver_later
                     render json: user, serializer: UserSerializer, status: :created
                 else
-                    render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+                    formatted_errors = user.errors.messages.flat_map do |attribute, messages|
+                        messages.map do |msg|
+                        {
+                        field: attribute.to_s,
+                        message: msg,
+                        type: 'validation_error'
+                        }
+                    end
+                end
+
+                    render json: { errors: formatted_errors(user) }, status: :unprocessable_entity
                 end
             end
 
@@ -76,61 +88,70 @@ module Api
 
                     render json: { message: "Tokens refreshed successfully!" }, status: :ok
                     else
-                    render json: { error: "Invalid refresh token" }, status: :unauthorized
+                    render json: { errors: [{ field: 'refresh_token', message: 'Invalid or expired refresh token', type: 'authentication_error' }] }, status: :unauthorized
+
                     end
                 else
-                    render json: { error: "Invalid refresh token" }, status: :unauthorized
+                    render json: { errors: [{ field: 'refresh_token', message: 'Invalid or expired refresh token', type: 'authentication_error' }] }, status: :unauthorized
+
                 end
             end
 
-    def profile
-        render json: current_user, serializer: UserSerializer, from_profile: true
-    end
-
-    def update_profile
-        ActiveRecord::Base.transaction do
-            user_params = profile_params.except(:artist)
-            if user_params.present?
-                unless current_user.update(user_params)
-                    render json: { errors: current_user.errors.full_messages }, status: :unprocessable_entity
-                    return
-                end
+            def profile
+                render json: current_user, serializer: UserSerializer, from_profile: true
             end
 
-            if current_user.artist? && profile_params[:artist].present?
-                @artist = current_user.artist || current_user.build_artist
-                artist_params = profile_params[:artist].except(:genres)
-                @artist.manager_id = nil 
-                if @artist.update(artist_params)
-                    if profile_params[:artist][:genres].present?
-                         genres = find_or_create_genres(profile_params[:artist][:genres])
-                         @artist.genres.replace(genres)
+            def update_profile
+                ActiveRecord::Base.transaction do
+                    user_params_only = profile_params.except(:artist)
+
+                    if user_params_only.present?
+                        unless current_user.update(user_params_only)
+                            formatted_errors = current_user.errors.map do |attr, msg|
+                                { field: attr.to_s, message: msg, type: 'validation_error' }
+                            end
+                            render json: { errors: formatted_errors }, status: :unprocessable_entity
+                            return
+                        end
                     end
-                else
-                    render json: { errors: @artist.errors.full_messages }, status: :unprocessable_entity
-                return
+
+                    if current_user.artist? && profile_params[:artist].present?
+                        @artist = current_user.artist || current_user.build_artist
+                        artist_params = profile_params[:artist].except(:genres)
+                        @artist.manager_id = nil 
+                        unless @artist.update(artist_params_only)
+                            formatted_errors = @artist.errors.map do |attr, msg|
+                                { field: "artist.#{attr}", message: msg, type: 'validation_error' }
+                            end
+                            render json: { errors: formatted_errors }, status: :unprocessable_entity
+                            return
+                        end
+
+                        if profile_params[:artist][:genres].present?
+                            genres = find_or_create_genres(profile_params[:artist][:genres])
+                            @artist.genres.replace(genres)
+                        end
+                    end
+                    render json: current_user, serializer: UserSerializer, from_artist: true, status: :ok
+                end
+                rescue Pundit::NotAuthorizedError => e
+                    render json: { errors: [{ field: 'authorization', message: 'Not authorized to update profile', type: 'authorization_error', details: e.message }] }, status: :forbidden
+                end
+
+                private
+
+                def profile_params
+                    allowed = [
+                        :first_name, :last_name, :email, :gender, :address, :dob, :phone_number,
+                        artist: [:first_release_year, :bio, :website, :photo, { social_media_links: {} }, { genres: [] }]
+                    ]
+                    params.require(:user).permit(allowed)
+                end
+
+                def user_params
+                    params.require(:user).permit(:first_name, :last_name, :email, :password, :password_confirmation, :gender, :address, :phone_number, :dob)
+                end
                 end
             end
-
-            render json: current_user, serializer: UserSerializer, from_artist: true, status: :ok
         end
-        rescue Pundit::NotAuthorizedError => e
-            render json: { error: "Not authorized to update profile", details: e.message }, status: :forbidden
-        end
-
-        private
-
-        def profile_params
-            allowed = [
-                :first_name, :last_name, :email, :gender, :address, :dob, :phone_number,
-                artist: [:first_release_year, :bio, :website, :photo, { social_media_links: {} }, { genres: [] }]
-            ]
-            params.require(:user).permit(allowed)
-        end
-
-        def user_params
-            params.require(:user).permit(:first_name, :last_name, :email, :password, :password_confirmation, :gender, :address, :phone_number, :dob)
-        end
-        end
-    end
-end
+        

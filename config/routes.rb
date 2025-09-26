@@ -9,6 +9,8 @@ Rails.application.routes.draw do
       end
       resources :artists do
         collection do
+          get :all
+          get :my_artists
           post :csv_import
           get :csv_export
         end
@@ -17,8 +19,16 @@ Rails.application.routes.draw do
           get :public_show
         end
       end
-      resources :albums
-      resources :musics
+      resources :albums do
+        collection do
+          get :all
+        end
+      end
+      resources :musics do
+        collection do
+          get :all
+        end
+      end
       resources  :genres
 
       get "/test", to: "test#index"

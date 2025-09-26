@@ -1,12 +1,19 @@
 class Api::V1::GenresController < ApplicationController
+  include Paginatable
   before_action :set_genre, only: [:show, :update, :destroy]
   def show
     render json: @genre, serializer: GenreSerializer, status: :ok
   end
 
   def index
-    @genres = policy_scope(Genre).order(:name)
-    render json: @genres, each_serializer: GenreSerializer, status: :ok
+    genres = Genre.all
+    @genres = paginate(genres)
+
+    render json: @genres,
+           each_serializer: GenreSerializer,
+           meta: paginate_meta(@genres),
+           adapter: :json,
+           status: :ok
   end
 
   def create
@@ -34,8 +41,6 @@ class Api::V1::GenresController < ApplicationController
     @genre.destroy
     render json: { message: "Genre deleted successfully" }, status: :ok
   end
-
-
 
   def search
     query = params[:query].to_s.downcase.strip

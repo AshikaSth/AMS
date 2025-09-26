@@ -7,6 +7,10 @@ class MusicPolicy < ApplicationPolicy
     user.artist?
   end
 
+  def all_musics?
+    user.artist? || user.artist_manager? || user.super_admin?
+  end
+
   def update?
     return true if user.super_admin?
     return false if user.artist_manager?
